@@ -1,0 +1,6 @@
+{
+  "name": "Sigeon AI",
+  "description": "Virtual Assistant for the Sigeon OS ecosystem, designed with a tech-optimistic Frutiger Aero aesthetic.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
