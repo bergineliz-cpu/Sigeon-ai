@@ -37,6 +37,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.R
 import com.example.data.ChatMessage
@@ -534,27 +535,10 @@ fun SigeonChatScreen(
                                         
                                         if (isSending) {
                                             item {
-                                                Box(
-                                                    modifier = Modifier
-                                                        .fillMaxWidth()
-                                                        .padding(vertical = 8.dp),
-                                                    contentAlignment = Alignment.CenterStart
-                                                ) {
-                                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                                        CircularProgressIndicator(
-                                                            modifier = Modifier.size(20.dp),
-                                                            color = SigeonBlue,
-                                                            strokeWidth = 2.dp
-                                                        )
-                                                        Spacer(modifier = Modifier.width(12.dp))
-                                                        Text(
-                                                            text = "$currentPersona is synthesizing feedback...",
-                                                            color = SigeonTextDark.copy(alpha = 0.6f),
-                                                            fontSize = 12.sp,
-                                                            fontWeight = FontWeight.Medium
-                                                        )
-                                                    }
-                                                }
+                                                PulsatingThinkingIndicator(
+                                                    currentPersona = currentPersona,
+                                                    modifier = Modifier.testTag("thinking_indicator")
+                                                )
                                             }
                                         }
                                     }
@@ -1098,6 +1082,207 @@ fun TimelineItem(
         Column(modifier = Modifier.weight(1f)) {
             Text(text = title, fontWeight = FontWeight.Black, color = SigeonTextDark, fontSize = 14.sp)
             Text(text = desc, fontSize = 12.sp, color = SigeonTextDark.copy(alpha = 0.7f), lineHeight = 16.sp)
+        }
+    }
+}
+
+// Custom pulsating high-fidelity CSS-inspired thinking indicator
+@Composable
+fun PulsatingThinkingIndicator(
+    currentPersona: String,
+    modifier: Modifier = Modifier
+) {
+    val infiniteTransition = rememberInfiniteTransition(label = "pulsating_thinking")
+    
+    // Scale pulse animation
+    val scale by infiniteTransition.animateFloat(
+        initialValue = 0.94f,
+        targetValue = 1.06f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1200, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "scale_pulse"
+    )
+    
+    // Alpha pulse animation
+    val alpha by infiniteTransition.animateFloat(
+        initialValue = 0.6f,
+        targetValue = 1.0f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1200, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "alpha_pulse"
+    )
+
+    // Bouncing/scaling sequential dots (imitating standard CSS dot bounce)
+    val dot1Scale by infiniteTransition.animateFloat(
+        initialValue = 0.5f,
+        targetValue = 1.3f,
+        animationSpec = infiniteRepeatable(
+            animation = keyframes {
+                durationMillis = 1200
+                0.5f at 0
+                1.3f at 400
+                0.5f at 800
+                0.5f at 1200
+            },
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "dot1"
+    )
+
+    val dot2Scale by infiniteTransition.animateFloat(
+        initialValue = 0.5f,
+        targetValue = 1.3f,
+        animationSpec = infiniteRepeatable(
+            animation = keyframes {
+                durationMillis = 1200
+                0.5f at 200
+                1.3f at 600
+                0.5f at 1000
+                0.5f at 1200
+            },
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "dot2"
+    )
+
+    val dot3Scale by infiniteTransition.animateFloat(
+        initialValue = 0.5f,
+        targetValue = 1.3f,
+        animationSpec = infiniteRepeatable(
+            animation = keyframes {
+                durationMillis = 1200
+                0.5f at 400
+                1.3f at 800
+                0.5f at 1200
+            },
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "dot3"
+    )
+
+    val activeColor = when (currentPersona) {
+        "Caramel" -> Color(0xFFFFB74D) // Warm golden orange for Caramel
+        "Nova" -> SigeonCyan // Glowing cyan for Nova
+        else -> SigeonBlue // Sigeon corporate blue
+    }
+
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(vertical = 12.dp, horizontal = 4.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        // Persona avatar with glowing ring and scale animation
+        Box(
+            modifier = Modifier
+                .graphicsLayer {
+                    scaleX = scale
+                    scaleY = scale
+                    this.alpha = alpha
+                }
+                .size(38.dp)
+                .clip(CircleShape)
+                .background(
+                    Brush.radialGradient(
+                        colors = listOf(activeColor.copy(alpha = 0.5f), Color.Transparent),
+                        radius = 70f
+                    )
+                )
+                .border(1.5.dp, activeColor, CircleShape)
+        ) {
+            val avatarRes = when (currentPersona) {
+                "Caramel" -> R.drawable.img_caramel_avatar
+                "Nova" -> R.drawable.img_nova_avatar
+                else -> R.drawable.img_sigeon_banner
+            }
+            Image(
+                painter = painterResource(id = avatarRes),
+                contentDescription = currentPersona,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clip(CircleShape)
+            )
+        }
+
+        Spacer(modifier = Modifier.width(12.dp))
+
+        // Glassmorphism background carrying the pulsating message
+        Surface(
+            modifier = Modifier
+                .shadow(3.dp, RoundedCornerShape(16.dp, 16.dp, 16.dp, 2.dp))
+                .border(
+                    width = 1.dp,
+                    color = Color.White.copy(alpha = 0.8f),
+                    shape = RoundedCornerShape(16.dp, 16.dp, 16.dp, 2.dp)
+                ),
+            color = Color.White.copy(alpha = 0.6f),
+            shape = RoundedCornerShape(16.dp, 16.dp, 16.dp, 2.dp)
+        ) {
+            Row(
+                modifier = Modifier
+                    .background(
+                        brush = Brush.verticalGradient(
+                            colors = listOf(Color.White.copy(alpha = 0.3f), activeColor.copy(alpha = 0.12f))
+                        )
+                    )
+                    .padding(horizontal = 14.dp, vertical = 10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                Text(
+                    text = "$currentPersona is formulating an answer",
+                    color = SigeonTextDark,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold
+                )
+                
+                Spacer(modifier = Modifier.width(2.dp))
+                
+                // Pulsating/Bouncing Dot Orbs
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .graphicsLayer {
+                                scaleX = dot1Scale
+                                scaleY = dot1Scale
+                                this.alpha = dot1Scale.coerceIn(0.4f, 1f)
+                            }
+                            .size(6.dp)
+                            .clip(CircleShape)
+                            .background(activeColor)
+                    )
+                    Box(
+                        modifier = Modifier
+                            .graphicsLayer {
+                                scaleX = dot2Scale
+                                scaleY = dot2Scale
+                                this.alpha = dot2Scale.coerceIn(0.4f, 1f)
+                            }
+                            .size(6.dp)
+                            .clip(CircleShape)
+                            .background(activeColor)
+                    )
+                    Box(
+                        modifier = Modifier
+                            .graphicsLayer {
+                                scaleX = dot3Scale
+                                scaleY = dot3Scale
+                                this.alpha = dot3Scale.coerceIn(0.4f, 1f)
+                            }
+                            .size(6.dp)
+                            .clip(CircleShape)
+                            .background(activeColor)
+                    )
+                }
+            }
         }
     }
 }
